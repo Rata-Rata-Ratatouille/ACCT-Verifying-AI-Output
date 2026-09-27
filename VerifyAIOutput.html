@@ -1,0 +1,366 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "50a59526-1d88-4e58-ae5b-41aea2310c1b",
+   "metadata": {},
+   "source": [
+    "# Base Python File"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "33f8e167-718e-4e5a-a6fe-ebe5fca29543",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Import Packages\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "%matplotlib inline\n",
+    "import seaborn as sns "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "e0ebad3a-7a70-40e0-b52e-38b2097af9e7",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Current Time: 09_27_2026_0821AM\n",
+      "Andre Padilla Navarro\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Create timestamp and author\n",
+    "from datetime import datetime\n",
+    "time_now=datetime.now().strftime('%m_%d_%Y_%I%M%p')\n",
+    "print (\"Current Time: {}\".format(time_now))\n",
+    "print (\"Andre Padilla Navarro\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "3f1d76cf-d0c7-428a-95f3-ff36f5cc193c",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Read the datasets and store it as data2025 and data2026\n",
+    "data2025=pd.read_csv('2025.csv',encoding='utf-8')\n",
+    "data2026=pd.read_csv('2026PartYear.csv',encoding='utf-8')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "273afda0-dcf2-4f18-94bf-ebc6ba2b0b21",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 2025-2026 new\n",
+    "new=pd.concat([data2026,data2025])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "313633c6-9450-4768-af6c-7545db115e0a",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Total Bulk</th>\n",
+       "      <th>TotalBagged</th>\n",
+       "      <th>Total Bulk and Bags</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Year</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>2025</th>\n",
+       "      <td>1,117,462,691</td>\n",
+       "      <td>811,226,582</td>\n",
+       "      <td>1,928,689,274</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2026</th>\n",
+       "      <td>1,249,949,459</td>\n",
+       "      <td>1,008,333,893</td>\n",
+       "      <td>2,258,283,353</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>YoY Growth (%)</th>\n",
+       "      <td>11.86%</td>\n",
+       "      <td>24.30%</td>\n",
+       "      <td>17.09%</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                   Total Bulk    TotalBagged Total Bulk and Bags\n",
+       "Year                                                            \n",
+       "2025            1,117,462,691    811,226,582       1,928,689,274\n",
+       "2026            1,249,949,459  1,008,333,893       2,258,283,353\n",
+       "YoY Growth (%)         11.86%         24.30%              17.09%"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "#Calculate base table (Periods 1–12)\n",
+    "new['Total Bulk'] = new['4046'] + new['4225'] + new['4770']\n",
+    "new['Year'] = pd.to_datetime(new['Current Year Week Ending']).dt.year\n",
+    "\n",
+    "bulk_vs_bags = (new[new['Period'].between(1, 12)].groupby('Year')[['Total Bulk','TotalBagged','Total Bulk and Bags']].sum())\n",
+    "\n",
+    "#Append YoY Growth percentage row\n",
+    "yoy_row = ((bulk_vs_bags.loc[2026] - bulk_vs_bags.loc[2025]) / bulk_vs_bags.loc[2025]) * 100\n",
+    "bulk_vs_bags.loc['YoY Growth (%)'] = yoy_row\n",
+    "\n",
+    "#Format DataFrame (Integers for years, percentages for bottom row)\n",
+    "formatted_table = bulk_vs_bags.apply(lambda col: col.map(lambda x: f\"{x:.2f}%\" if col.name == col.name and isinstance(x, float) and x < 100 else f\"{x:,.0f}\"))\n",
+    "\n",
+    "display(formatted_table)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "b37caafb-a923-475a-9b0f-6c84f9041f9f",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th>Type</th>\n",
+       "      <th>Conventional</th>\n",
+       "      <th>Organic</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Year</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>2025</th>\n",
+       "      <td>$1.22</td>\n",
+       "      <td>$1.72</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2026</th>\n",
+       "      <td>$0.92</td>\n",
+       "      <td>$1.53</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>YoY Growth (%)</th>\n",
+       "      <td>-24.28%</td>\n",
+       "      <td>-11.03%</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Type           Conventional  Organic\n",
+       "Year                                \n",
+       "2025                  $1.22    $1.72\n",
+       "2026                  $0.92    $1.53\n",
+       "YoY Growth (%)      -24.28%  -11.03%"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "#Filter Periods 1–12 and calculate Revenue\n",
+    "period = new[new['Period'].between(1, 12)].copy()\n",
+    "period['Revenue'] = period['ASP Current Year'] * period['Total Bulk and Bags']\n",
+    "\n",
+    "#Aggregate Revenue & Volume by Year and Type\n",
+    "totals = period.groupby(['Year', 'Type'])[['Revenue', 'Total Bulk and Bags']].sum()\n",
+    "asp = (totals['Revenue'] / totals['Total Bulk and Bags']).unstack()\n",
+    "\n",
+    "#Append YoY Growth (%)\n",
+    "asp.loc['YoY Growth (%)'] = ((asp.loc[2026] - asp.loc[2025]) / asp.loc[2025]) * 100\n",
+    "\n",
+    "#Format output (uses .apply to ensure compatibility across pandas versions)\n",
+    "output = asp.iloc[:2].apply(lambda col: col.map(lambda x: f\"${x:.2f}\"))\n",
+    "output.loc['YoY Growth (%)'] = asp.loc['YoY Growth (%)'].map(lambda x: f\"{x:+.2f}%\")\n",
+    "\n",
+    "display(output)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "20c38bb6-bb89-42e2-9ea3-0f314b467b9b",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>4046</th>\n",
+       "      <th>4225</th>\n",
+       "      <th>4770</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Year</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>2025</th>\n",
+       "      <td>894,513,441</td>\n",
+       "      <td>203,561,910</td>\n",
+       "      <td>19,387,340</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2026</th>\n",
+       "      <td>891,935,307</td>\n",
+       "      <td>306,088,070</td>\n",
+       "      <td>51,926,083</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>YoY Growth (%)</th>\n",
+       "      <td>-0.29%</td>\n",
+       "      <td>+50.37%</td>\n",
+       "      <td>+167.83%</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                       4046         4225        4770\n",
+       "Year                                                \n",
+       "2025            894,513,441  203,561,910  19,387,340\n",
+       "2026            891,935,307  306,088,070  51,926,083\n",
+       "YoY Growth (%)       -0.29%      +50.37%    +167.83%"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "#Filter for Periods 1–12 and group by Year for PLU size codes\n",
+    "plu = (new[new['Period'].between(1, 12)].groupby('Year')[['4046', '4225', '4770']].sum())\n",
+    "\n",
+    "# 2. Append YoY Growth (%)\n",
+    "plu.loc['YoY Growth (%)'] = ((plu.loc[2026] - plu.loc[2025]) / plu.loc[2025]) * 100\n",
+    "\n",
+    "# 3. Format output (Volume counts with commas, YoY growth with sign and percentage)\n",
+    "table = plu.iloc[:2].apply(lambda col: col.map(lambda x: f\"{x:,.0f}\"))\n",
+    "table.loc['YoY Growth (%)'] = plu.loc['YoY Growth (%)'].map(lambda x: f\"{x:+.2f}%\")\n",
+    "\n",
+    "display(table)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "e6c55ee7-1b60-426f-a2cd-dd1a824b30ed",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.14.6"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
